@@ -1,0 +1,8 @@
+interface:
+  display_name: "Serial Novel Writing"
+  short_description: "Plan, draft, and manage serial fiction updates."
+  brand_color: "#6D5BD0"
+  default_prompt: "Use $novel-writing to plan my next five serial updates, draft the next chapter, and check release readiness."
+
+policy:
+  allow_implicit_invocation: true

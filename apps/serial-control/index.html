@@ -1,0 +1,1864 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Serial Novel Control</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Project controls">
+        <div class="brand">
+          <img src="./assets/icon.svg" alt="" />
+          <div>
+            <h1>Serial Novel</h1>
+            <p>Control</p>
+          </div>
+        </div>
+
+        <label class="sidebar-field">
+          作品名
+          <input id="projectTitle" type="text" placeholder="未命名连载" />
+        </label>
+
+        <label class="sidebar-field">
+          创作模式
+          <select id="projectMode">
+            <option value="serial">连载小说</option>
+            <option value="short">短篇故事</option>
+          </select>
+        </label>
+
+        <label class="sidebar-field sidebar-optional-field">
+          类型
+          <input id="genre" type="text" placeholder="都市 / 玄幻 / 悬疑 / 科幻" />
+        </label>
+
+        <label class="sidebar-field sidebar-optional-field">
+          平台
+          <input id="platform" type="text" placeholder="起点 / 番茄 / 晋江 / 自定义" />
+        </label>
+
+        <div class="theme-picker theme-picker-compact" aria-label="主题颜色">
+          <input id="theme" type="hidden" />
+          <button id="themeDrawerOpenBtn" class="theme-current-card" type="button">
+            <span>
+              <small>主题颜色</small>
+              <strong id="themeCurrentName">爱马仕橙</strong>
+            </span>
+            <em>色卡墙</em>
+          </button>
+          <p class="theme-picker-help">主题选择已收起，需要换色时点开色卡墙。</p>
+        </div>
+
+        <label class="inline-check simple-mode-toggle">
+          <input id="simpleModeToggle" type="checkbox" />
+          <span>
+            极简模式
+            <small id="simpleModeStatus">完整模式</small>
+          </span>
+        </label>
+
+        <div class="form-row sidebar-optional-field">
+          <label>
+            更新频率
+            <select id="cadence">
+              <option value="日更">日更</option>
+              <option value="隔日更">隔日更</option>
+              <option value="周更">周更</option>
+              <option value="不固定">不固定</option>
+            </select>
+          </label>
+          <label>
+            每章字数
+            <input id="targetWords" type="number" min="300" step="100" value="2500" />
+          </label>
+        </div>
+
+        <label class="sidebar-optional-field">
+          核心卖点
+          <textarea id="corePromise" rows="4" placeholder="读者每章回来想获得什么？"></textarea>
+        </label>
+
+        <div class="button-grid sidebar-actions">
+          <button id="saveBtn" type="button">保存</button>
+          <button id="exportBtn" type="button">导出</button>
+          <button id="importBtn" type="button">导入</button>
+          <button id="resetBtn" type="button">清空</button>
+        </div>
+        <details class="sidebar-project-tools">
+          <summary>项目库和同步</summary>
+          <div class="button-grid">
+            <button id="saveProjectBtn" type="button">保存到项目库</button>
+            <button id="refreshProjectsBtn" type="button">刷新项目库</button>
+            <button id="refreshProjectBibleBtn" type="button">刷新项目圣经</button>
+          </div>
+          <label>
+            项目库
+            <select id="projectLibrary"></select>
+          </label>
+          <button id="loadProjectBtn" type="button">打开选中项目</button>
+        </details>
+        <div class="status-strip" id="appStatus">App 状态：检查中</div>
+        <details class="version-notice" id="versionNotice">
+          <summary>
+            <span>版本更新通知</span>
+            <strong id="versionNoticeTitle">检查中</strong>
+          </summary>
+          <ul id="versionNoticeList">
+            <li>正在读取本地版本信息。</li>
+          </ul>
+          <p id="versionNoticeMeta">安装包生成后会放在 dist 文件夹。</p>
+        </details>
+        <input id="importFile" type="file" accept="application/json" hidden />
+      </aside>
+      <div class="theme-drawer-shell" id="themeDrawer" hidden>
+        <button class="theme-drawer-backdrop" id="themeDrawerBackdrop" type="button" aria-label="关闭主题选择"></button>
+        <aside class="theme-drawer" aria-label="主题颜色选择">
+          <header class="theme-drawer-head">
+            <div>
+              <span class="eyebrow">主题颜色</span>
+              <strong>选择控制台配色</strong>
+            </div>
+            <button id="themeDrawerCloseBtn" type="button">关闭</button>
+          </header>
+          <p class="theme-drawer-note">深色主题和明亮主题都会显示主色、背景色、文字色，并标记可读性。</p>
+          <div id="themeWall" class="theme-wall" role="radiogroup" aria-label="主题颜色" data-theme-ids="candy-pop teal-magenta lanshan-light ink-lime-deep"></div>
+        </aside>
+      </div>
+
+      <main class="workspace">
+        <header class="topbar">
+          <nav class="tabs grouped-tabs" aria-label="Workspace tabs">
+            <div class="tab-group">
+              <span class="tab-group-label">主入口</span>
+              <button class="tab is-active" data-tab="quick" type="button">写作首页</button>
+              <button class="tab" data-tab="manuscript" type="button">正文库</button>
+              <button class="tab" data-tab="diagnosis" type="button">AI诊断修复中心</button>
+              <button class="tab" data-tab="usage" type="button">使用统计</button>
+              <button class="tab" data-tab="api" type="button">AI 接口</button>
+            </div>
+          </nav>
+          <div class="topbar-actions">
+            <button id="advancedToggleBtn" type="button">高级工具</button>
+            <button id="copyPromptBtn" class="primary-action" type="button">复制提示词</button>
+          </div>
+        </header>
+
+        <section class="panel is-active quick-panel" id="quick" data-panel>
+          <div class="section-heading">
+            <h2 id="quickPanelTitle">续写工作台</h2>
+            <div class="quick-actions">
+              <details class="help-card">
+                <summary>操作说明</summary>
+                <ol id="quickHelpList">
+                  <li>先确认项目和正文库，系统会自动读取最新章节。</li>
+                  <li>按 5 步从左到右执行：大纲、记忆卡、章节方向、正文、入库。</li>
+                  <li>生成正文时会按“大纲 → 记忆卡 → 最新章节 → 章节方向”的顺序判断。</li>
+                  <li>已有正文可以粘到下方，也可以点“从正文库汇总”。</li>
+                </ol>
+              </details>
+            </div>
+          </div>
+          <div class="writing-workbench">
+            <section class="workflow-card" aria-label="写作流程">
+              <div class="workflow-card-head">
+                <div>
+                  <span class="eyebrow" id="workflowEyebrow">当前写作任务</span>
+                  <strong id="workflowHeadline">按顺序点 5 个按钮即可</strong>
+                </div>
+                <span class="workflow-route" id="workflowRoute">大纲 → 记忆卡 → 最新章节 → 章节方向 → 正文</span>
+              </div>
+              <div class="workbench-focus">
+                <div class="workbench-focus-main">
+                  <span class="eyebrow" id="focusModeLabel">当前要写</span>
+                  <strong id="focusTitle">继续写下一章</strong>
+                  <p id="focusSubtitle">AI 会先看项目大纲、小说记忆卡、正文库最新章节和章节方向，再生成正文。</p>
+                </div>
+                <div class="workbench-next-action">
+                  <span class="eyebrow">下一步</span>
+                  <button id="focusPrimaryBtn" class="focus-primary-btn" type="button">
+                    <span id="focusPrimaryLabel">生成正文</span>
+                    <small id="focusPrimaryHint">按当前资料继续写</small>
+                  </button>
+                </div>
+              </div>
+              <div class="task-meta-grid" aria-label="当前写作任务数据">
+                <div>
+                  <span>作品</span>
+                  <strong id="taskProjectValue">未命名</strong>
+                </div>
+                <div>
+                  <span>模式</span>
+                  <strong id="taskModeValue">连载</strong>
+                </div>
+                <div>
+                  <span>最新章节</span>
+                  <strong id="taskLatestValue">暂无正文</strong>
+                </div>
+                <div>
+                  <span>记忆卡</span>
+                  <strong id="taskMemoryValue">未分析</strong>
+                </div>
+                <div>
+                  <span>章节方向</span>
+                  <strong id="taskDirectionValue">未推断</strong>
+                </div>
+              </div>
+              <div class="workbench-readiness-grid" aria-label="工作台准备状态">
+                <button class="workbench-readiness-card" data-open-memory="outline" type="button">
+                  <span id="focusOutlineLabel">大纲</span>
+                  <strong id="focusOutlineState">待整理</strong>
+                  <small id="focusOutlineHint">控制主线</small>
+                </button>
+                <button class="workbench-readiness-card" data-open-memory="analysis" type="button">
+                  <span id="focusAnalysisLabel">记忆卡</span>
+                  <strong id="focusAnalysisState">待分析</strong>
+                  <small id="focusAnalysisHint">控制风险</small>
+                </button>
+                <button class="workbench-readiness-card" data-open-memory="brief" type="button">
+                  <span id="focusBriefLabel">章节方向</span>
+                  <strong id="focusBriefState">待推断</strong>
+                  <small id="focusBriefHint">控制承接</small>
+                </button>
+                <div class="workbench-readiness-card is-static">
+                  <span id="focusSourceLabel">续写起点</span>
+                  <strong id="focusSourceState">等待正文库</strong>
+                  <small id="focusSourceHint">自动读取</small>
+                </div>
+                <button class="workbench-readiness-card ending-focus-card" data-open-tool="ending" type="button">
+                  <span id="focusEndingLabel">完结进度</span>
+                  <strong id="focusEndingState">连载中</strong>
+                  <small id="focusEndingHint">可开启完结规划</small>
+                </button>
+                <button class="workbench-readiness-card quality-debt-focus-card" data-open-tool="quality" type="button">
+                  <span id="focusDebtLabel">质量债务</span>
+                  <strong id="focusDebtState">0项</strong>
+                  <small id="focusDebtHint">暂无待处理</small>
+                </button>
+              </div>
+              <details class="manual-flow-details">
+                <summary class="manual-flow-heading">
+                  <span>五步写作流程</span>
+                  <small>从左到右执行，系统会提示下一步</small>
+                </summary>
+                <div class="quick-command-strip workflow-steps" aria-label="Writing flow actions">
+                  <button id="generateOutlineBtn" data-step="01" type="button">
+                    <span id="generateOutlineLabel">整理大纲</span>
+                    <small id="generateOutlineHint">确定故事骨架</small>
+                  </button>
+                  <button id="analyzeNovelBtn" data-step="02" type="button">
+                    <span id="analyzeNovelLabel">分析记忆卡</span>
+                    <small id="analyzeNovelHint">找风险和下一步</small>
+                  </button>
+                  <button id="inferNextBtn" data-step="03" type="button">
+                    <span id="inferNextLabel">推断章节方向</span>
+                    <small id="inferNextHint">生成连续方向</small>
+                  </button>
+                  <button id="quickGenerateBtn" class="main-command" data-step="04" type="button">
+                    <span id="quickGenerateLabel">生成正文</span>
+                    <small id="quickGenerateHint">默认一次两章</small>
+                  </button>
+                  <button id="quickSaveChapterBtn" data-step="05" type="button">
+                    <span id="quickSaveLabel">保存章节</span>
+                    <small id="quickSaveHint">自动入正文库</small>
+                  </button>
+                </div>
+              </details>
+            </section>
+
+            <aside class="context-board" aria-label="AI 当前读取依据">
+              <div class="context-board-head">
+                <div>
+                  <span class="eyebrow">AI 当前读取依据</span>
+                  <strong id="contextBoardTitle">生成前请看这里</strong>
+                </div>
+                <span class="context-badge">自动读取</span>
+              </div>
+              <div class="context-source-list" id="contextSourceList">
+                <div><span>1</span><strong>项目大纲</strong><small>控制主线和伏笔</small></div>
+                <div><span>2</span><strong>小说记忆卡</strong><small>控制风险和后续建议</small></div>
+                <div><span>3</span><strong>正文库最新章节</strong><small>控制真实续写起点</small></div>
+                <div><span>4</span><strong>章节方向</strong><small>控制后续章节承接</small></div>
+              </div>
+              <div class="latest-chapter-card">
+                <span id="quickLatestEyebrow" class="eyebrow">最新章节</span>
+                <strong id="quickLatestChapterTitle">等待读取正文库</strong>
+                <p id="quickLatestChapterEnding">正文库有章节后，这里会显示最新章节结尾摘要。</p>
+              </div>
+              <div class="progress-data-grid" aria-label="写作进度数据">
+                <div class="progress-data-card">
+                  <span id="strategyProgressLabel">创作策略</span>
+                  <strong id="strategyProgressValue">标准模式</strong>
+                  <small id="strategyProgressHint">未来4章，下2章</small>
+                </div>
+                <div class="progress-data-card">
+                  <span id="libraryProgressLabel">正文库进度</span>
+                  <strong id="libraryProgressValue">暂无正文</strong>
+                  <small id="libraryProgressHint">先保存章节后会自动更新</small>
+                </div>
+                <div class="progress-data-card">
+                  <span id="analysisProgressLabel">记忆卡覆盖</span>
+                  <strong id="analysisProgressValue">未分析</strong>
+                  <small id="analysisProgressHint">分析后记录覆盖章节</small>
+                </div>
+                <div class="progress-data-card">
+                  <span id="briefProgressLabel">章节方向</span>
+                  <strong id="briefProgressValue">未推断</strong>
+                  <small id="briefProgressHint">推断后显示具体章节</small>
+                </div>
+              </div>
+            </aside>
+          </div>
+
+          <div class="quick-status-grid">
+            <div class="status-strip quick-status-card" id="quickStatus">先确认正文库最新章节，再按 5 步生成。</div>
+            <div class="status-strip ai-task-status" id="aiTaskStatus" data-status="idle">AI任务：暂无运行记录。</div>
+            <div class="usage-meter" id="usageEstimate">预计发送字数：等待输入</div>
+          </div>
+
+          <section class="home-reference-panel" aria-label="AI参考状态">
+            <div class="home-section-title">
+              <div>
+                <span class="eyebrow">AI 会参考什么</span>
+                <strong>参考状态卡</strong>
+              </div>
+              <small>点击卡片进入右侧抽屉或对应设置</small>
+            </div>
+            <div class="memory-summary-grid memory-status-rail" aria-label="创作记忆摘要">
+              <button class="memory-card" data-open-memory="outline" type="button">
+                <span class="memory-card-top">
+                  <span id="outlineCardEyebrow" class="eyebrow">项目大纲</span>
+                  <span id="outlineSummaryState" class="memory-card-state">未填写</span>
+                </span>
+                <strong id="outlineCardTitle">故事骨架和长期方向</strong>
+                <span id="outlineSummaryMeta" class="memory-card-meta">大纲整理结果：无</span>
+                <span id="outlineSummaryPreview" class="memory-card-preview">点击编辑核心卖点、世界观、人物关系、阶段主线和伏笔回收。</span>
+                <span id="outlineCardAction" class="memory-card-action">编辑大纲</span>
+              </button>
+              <button class="memory-card" data-open-memory="analysis" type="button">
+                <span class="memory-card-top">
+                  <span id="analysisCardEyebrow" class="eyebrow">小说记忆卡</span>
+                  <span id="analysisSummaryState" class="memory-card-state">未分析</span>
+                </span>
+                <strong id="analysisCardTitle">下一步、风险和续写记忆</strong>
+                <span id="analysisSummaryMeta" class="memory-card-meta">覆盖章节：未分析</span>
+                <span id="analysisSummaryPreview" class="memory-card-preview">点击查看或修改下一步最该做什么、最大连载风险、未来4章建议。</span>
+                <span id="analysisCardAction" class="memory-card-action">编辑记忆卡</span>
+              </button>
+              <button class="memory-card" data-open-memory="brief" type="button">
+                <span class="memory-card-top">
+                  <span id="briefCardEyebrow" class="eyebrow">章节方向</span>
+                  <span id="briefSummaryState" class="memory-card-state">未推断</span>
+                </span>
+                <strong id="briefCardTitle">下一章和下下章承接</strong>
+                <span id="briefSummaryMeta" class="memory-card-meta">目标章节：未推断</span>
+                <span id="briefSummaryPreview" class="memory-card-preview">点击查看两章推断，生成正文会优先按这里执行。</span>
+                <span id="briefCardAction" class="memory-card-action">编辑方向</span>
+              </button>
+              <button class="memory-card knowledge-summary-card" id="knowledgeSummaryCard" type="button">
+                <span class="memory-card-top">
+                  <span class="eyebrow">AI资料库</span>
+                  <span id="knowledgeSummaryState" class="memory-card-state">未更新</span>
+                </span>
+                <strong id="knowledgeSummaryTitle">正文证据和精简资料</strong>
+                <span id="knowledgeSummaryMeta" class="memory-card-meta">覆盖章节：未建立</span>
+                <span id="knowledgeSummaryPreview" class="memory-card-preview">点击查看资料库更新、深度整理和发送依据。</span>
+                <span class="memory-card-action">打开资料库设置</span>
+              </button>
+            </div>
+          </section>
+
+          <div class="generation-summary-strip">
+            <span id="generationSettingsSummary">省量模式未开启 · 一次两章 · 2500字/章 · 当前服务待检测</span>
+          </div>
+
+          <details class="quick-accordion generation-settings">
+            <summary>
+              <span>生成设置</span>
+              <small id="generationSummaryText">大纲模式、省量和字数</small>
+            </summary>
+            <div class="generation-settings-grid">
+              <label id="creativeStrategyLabel">
+                创作策略
+                <select id="creativeStrategy">
+                  <option value="standard">标准模式：未来4章，推断下2章</option>
+                  <option value="longline">长线模式：未来8章，推断下4章</option>
+                </select>
+              </label>
+              <label>
+                大纲模式
+                <select id="outlineMode">
+                  <option value="initial">初次整理：从正文整理完整项目大纲</option>
+                  <option value="update">更新大纲：保留手动设定，只补充新增变化</option>
+                  <option value="check">检查大纲：只找冲突和需要确认，不改大纲</option>
+                </select>
+              </label>
+              <label class="inline-check">
+                <input id="economyMode" type="checkbox" />
+                <span>省量模式：推断和生成只带关键上下文</span>
+              </label>
+              <label>
+                最近前文字数
+                <select id="recentContextChars">
+                  <option value="3000">3000 字，最省</option>
+                  <option value="5000">5000 字，推荐</option>
+                  <option value="8000">8000 字，更稳</option>
+                  <option value="12000">12000 字，细节更多</option>
+                </select>
+              </label>
+              <label>
+                生成正文范围
+                <select id="quickDraftScope">
+                  <option value="two">一次写两章，推荐省调用</option>
+                  <option value="one">只写下一章</option>
+                </select>
+              </label>
+              <div class="status-strip generation-settings-note">整理结果会先进入“项目大纲”编辑抽屉里的“大纲整理结果”，确认后再应用。</div>
+              <details class="quick-accordion evidence-details generation-settings-block" id="knowledgeDetails">
+                <summary>
+                  <span>AI资料库详情</span>
+                  <small>更新、深度整理和发送依据</small>
+                </summary>
+                <div class="quick-accordion-body evidence-details-body">
+              <div class="outline-evidence-panel">
+                <div class="outline-evidence-head">
+                  <strong>AI资料库</strong>
+                  <small id="outlineEvidenceStatus">AI资料库：未更新</small>
+                  <button id="closeKnowledgeDetailsBtn" class="drawer-close-mini" type="button">关闭</button>
+                </div>
+                <div class="evidence-overview-grid">
+                  <div class="evidence-data-card" id="evidenceWrittenCard" data-status="idle">
+                    <span>正文库已写</span>
+                    <strong id="evidenceWrittenValue">0章</strong>
+                    <small id="evidenceWrittenHint">暂无正文</small>
+                  </div>
+                  <div class="evidence-data-card evidence-bible-card" id="evidenceBibleCard" data-status="idle">
+                    <span>项目圣经总览</span>
+                    <strong id="evidenceBibleValue">未生成</strong>
+                    <small id="evidenceBibleHint">由大纲、作者确认和四库汇总</small>
+                  </div>
+                  <div class="evidence-data-card" id="evidenceScanCard" data-status="idle">
+                    <span>资料覆盖</span>
+                    <strong id="evidenceScanValue">未更新</strong>
+                    <small id="evidenceScanHint">等待更新</small>
+                  </div>
+                  <div class="evidence-data-card" id="evidenceCompressionCard" data-status="idle">
+                    <span>深度整理</span>
+                    <strong id="evidenceCompressionValue">未生成</strong>
+                    <small id="evidenceCompressionHint">等待整理</small>
+                  </div>
+                  <div class="evidence-data-card" id="evidenceHealthCard" data-status="idle">
+                    <span>当前状态</span>
+                    <strong id="evidenceHealthValue">待建立</strong>
+                    <small id="evidenceHealthHint">先更新资料库</small>
+                  </div>
+                  <div class="evidence-data-card" id="evidenceDebtCard" data-status="idle">
+                    <span>质量债务</span>
+                    <strong id="evidenceDebtValue">0项</strong>
+                    <small id="evidenceDebtHint">暂无待处理</small>
+                  </div>
+                </div>
+                <div class="evidence-step-list" aria-label="AI资料库操作流程">
+                  <div class="evidence-step" id="evidenceStepScan" data-status="idle">
+                    <span>1</span>
+                    <div>
+                      <strong>读取正文库</strong>
+                      <small id="evidenceStepScanHint">只读已入库章节</small>
+                    </div>
+                  </div>
+                  <div class="evidence-step" id="evidenceStepCompress" data-status="idle">
+                    <span>2</span>
+                    <div>
+                      <strong>整理AI资料</strong>
+                      <small id="evidenceStepCompressHint">生成精简资料</small>
+                    </div>
+                  </div>
+                  <div class="evidence-step" id="evidenceStepUse" data-status="idle">
+                    <span>3</span>
+                    <div>
+                      <strong>交给 AI 使用</strong>
+                      <small id="evidenceStepUseHint">大纲、记忆卡、推断会按需读取</small>
+                    </div>
+                  </div>
+                </div>
+                <div class="outline-review-actions outline-evidence-actions">
+                  <button id="updateAiKnowledgeBtn" type="button">快速更新 AI资料库</button>
+                  <button id="organizeAiKnowledgeBtn" type="button">深度整理资料库</button>
+                  <button id="clearOutlineEvidenceBtn" type="button">清空</button>
+                </div>
+                <div class="status-strip evidence-action-hint" id="evidenceActionHint">AI资料库只读取正文库已入库章节，不读取生成正文草稿；快速更新只处理新增章节。</div>
+                <div class="status-strip" id="outlineEvidenceCompressionStatus">AI精简资料：未生成</div>
+                <details class="evidence-bible-view" id="evidenceBibleDetails">
+                  <summary>
+                    <span>项目圣经总览</span>
+                    <small>四库汇总，不是独立事实源</small>
+                  </summary>
+                  <div class="evidence-bible-body">
+                    <div class="status-strip">项目圣经总览由项目大纲、作者确认区、剧情事实库、世界观设定库、人物状态库和伏笔线索库汇总生成；要改具体事实，请回到对应资料库或项目大纲。</div>
+                    <textarea id="evidenceBiblePreview" rows="8" readonly placeholder="更新 AI资料库或保存项目后，这里会显示项目圣经总览。"></textarea>
+                    <div class="outline-review-actions outline-evidence-actions">
+                      <button id="refreshProjectBibleInlineBtn" type="button">刷新项目圣经文件</button>
+                    </div>
+                  </div>
+                </details>
+                <div class="evidence-fulfillment-card" id="evidenceFulfillmentCard" data-status="idle">
+                  <div>
+                    <strong>章节兑现核对</strong>
+                    <small id="evidenceFulfillmentMeta">等待资料库更新</small>
+                  </div>
+                  <p id="evidenceFulfillmentSummary">保存正文并快速更新 AI资料库后，这里会显示章节方向是否兑现、是否偏航、哪些伏笔需要补偿。</p>
+                </div>
+                <div class="evidence-index-grid">
+                  <div class="evidence-index-card">
+                    <span>剧情事实库</span>
+                    <strong id="evidenceArcSize">0字</strong>
+                  </div>
+                  <div class="evidence-index-card">
+                    <span>世界观设定库</span>
+                    <strong id="evidenceGlobalSize">0字</strong>
+                  </div>
+                  <div class="evidence-index-card">
+                    <span>人物状态库</span>
+                    <strong id="evidenceCharacterSize">0字</strong>
+                  </div>
+                  <div class="evidence-index-card">
+                    <span>伏笔线索库</span>
+                    <strong id="evidenceForeshadowSize">0字</strong>
+                  </div>
+                </div>
+                <div class="evidence-route-grid">
+                  <div class="evidence-route-item"><strong>整理大纲</strong><small id="evidenceRouteOutline">AI精简资料</small></div>
+                  <div class="evidence-route-item"><strong>记忆卡</strong><small id="evidenceRouteAnalysis">资料 + 最近两章</small></div>
+                  <div class="evidence-route-item"><strong>章节方向</strong><small id="evidenceRoutePlanning">记忆卡 + 伏笔</small></div>
+                  <div class="evidence-route-item"><strong>生成正文</strong><small id="evidenceRouteDraft">小摘要 + 最近两章</small></div>
+                </div>
+                <div class="evidence-risk-list" id="evidenceRiskList">长篇建议先更新 AI资料库，再整理大纲或生成正文。</div>
+              </div>
+                </div>
+              </details>
+              <details class="quick-accordion optional-fields generation-settings-block">
+                <summary>
+                  <span>可选要求</span>
+                  <small>标题、必须出现</small>
+                </summary>
+                <div class="quick-accordion-body generation-optional-grid">
+                  <label id="quickTitleLabel">
+                    章节标题
+                    <input id="quickTitle" type="text" placeholder="可不填，保存时自动生成" />
+                  </label>
+                  <label id="quickMustHaveLabel">
+                    本章必须出现
+                    <textarea id="quickMustHave" rows="3" placeholder="可不填。例如：人物、道具、伏笔、爽点、感情推进、结尾钩子"></textarea>
+                  </label>
+                </div>
+              </details>
+            </div>
+          </details>
+          <div class="quick-grid">
+            <div class="quick-fields">
+              <div class="field-heading">
+                <span id="quickSourceHeading">已有小说/前文</span>
+                <button id="useChaptersAsSourceBtn" type="button">从正文库汇总</button>
+              </div>
+              <details class="quick-accordion quick-source-details" id="quickSourceDetails">
+                <summary>
+                  <span>前文文本</span>
+                  <small id="quickSourceSummary">未填写</small>
+                </summary>
+                <div class="quick-accordion-body">
+                  <div id="quickSourceNote" class="status-strip">如果正文已经在正文库里，生成时会自动读取正文库，不需要把整本书展开在这里。</div>
+                  <label id="quickSourceTextLabel">
+                    把没写完的小说放这里
+                    <textarea id="quickSourceText" rows="10" placeholder="可以粘贴整本已写正文、最近几章、故事大纲或人物设定。内容越完整，AI 越能判断下一章该怎么接。"></textarea>
+                  </label>
+                </div>
+              </details>
+            </div>
+            <div class="quick-output-wrap">
+              <span class="quick-output-header">
+                <span>
+                  <strong>生成正文</strong>
+                  <small id="quickOutputState">等待生成</small>
+                </span>
+                <span class="quick-output-meta">
+                  <button id="shortSaveStoryBtn" class="short-story-action" type="button" hidden>保存短篇</button>
+                  <button id="quickSaveOutputBtn" type="button">保存到正文库</button>
+                  <button id="copyQuickOutputBtn" type="button">复制</button>
+                  <button id="quickOutputToPolishBtn" type="button">送去润色</button>
+                  <button id="clearQuickOutputBtn" type="button">清空</button>
+                  <span id="quickOutputStats">字数：0</span>
+                </span>
+              </span>
+              <div id="draftBoundaryNotice" class="status-strip draft-boundary-notice" data-status="idle">生成正文会先停留在草稿区；保存到正文库后，才会成为正史并进入 AI资料库。</div>
+              <textarea id="quickOutput" class="quick-output" rows="22" spellcheck="false" placeholder="点击“生成正文”后，内容会出现在这里。两章模式会用 ===下一章=== 分隔，满意后点“保存章节”会自动拆分入库。"></textarea>
+              <section id="draftRecoveryPanel" class="draft-recovery-panel" hidden>
+                <div>
+                  <span class="eyebrow">生成失败恢复</span>
+                  <strong id="draftRecoveryTitle">需要处理后重试</strong>
+                  <p id="draftRecoveryAdvice">先查看失败原因，再选择省量重试或单章重试。</p>
+                </div>
+                <div class="draft-recovery-actions">
+                  <button id="retryEconomyDraftBtn" type="button">省量重试</button>
+                  <button id="retrySingleDraftBtn" type="button">单章重试</button>
+                  <button id="viewCodexLogBtn" type="button">查看日志</button>
+                  <button id="copyDraftErrorBtn" type="button">复制错误</button>
+                </div>
+              </section>
+              <section id="draftQualityPanel" class="draft-quality-panel" data-level="idle" hidden>
+                <div>
+                  <span class="eyebrow">保存前质量门</span>
+                  <strong id="draftQualityTitle">等待正文</strong>
+                  <p id="draftQualitySummary">生成正文后会自动检查章节完整度、承接安全和保存风险。</p>
+                </div>
+                <ul id="draftQualityList"></ul>
+                <div class="draft-quality-actions">
+                  <button id="revisionFromQualityBtn" type="button">加入修改任务</button>
+                  <button id="draftQualityToPolishBtn" type="button">送去润色</button>
+                  <button id="draftQualityToReleaseBtn" type="button">送发布检查</button>
+                  <button id="draftQualityOpenAuditBtn" type="button">打开长篇体检</button>
+                  <button id="draftQualityForceSaveBtn" type="button" hidden>确认仍保存</button>
+                </div>
+              </section>
+              <section class="revision-task-panel quick-revision-bridge">
+                <div class="revision-task-head">
+                  <div>
+                    <span class="eyebrow">诊断修复</span>
+                    <strong id="quickRevisionTaskSummary">暂无待办</strong>
+                    <p>长篇体检、发布检查和质量门的问题会进入 AI诊断修复中心统一处理。</p>
+                  </div>
+                  <div class="revision-task-actions">
+                    <button id="quickOpenDiagnosisBtn" type="button">打开 AI诊断修复中心</button>
+                  </div>
+                </div>
+              </section>
+              <section id="shortReviewPanel" class="short-review-panel" hidden>
+                <div class="short-review-head">
+                  <div>
+                    <span class="eyebrow">短篇成稿检查</span>
+                    <strong>闭环、反转、结尾和情绪</strong>
+                  </div>
+                  <div class="short-review-actions">
+                    <span id="shortReviewStatus" class="short-review-status" data-status="pending">未检查</span>
+                    <button id="shortReviewToPolishBtn" type="button">送去精修</button>
+                  </div>
+                </div>
+                <textarea id="shortReviewResult" rows="8" spellcheck="false" placeholder="点击“检查短篇”后，这里会显示故事闭环、反转、结尾余味和可修改建议。"></textarea>
+              </section>
+            </div>
+          </div>
+          <div class="memory-drawer-shell" id="memoryDrawer" hidden>
+            <button class="memory-drawer-backdrop" id="closeMemoryDrawerBackdrop" type="button" aria-label="关闭编辑抽屉"></button>
+            <aside class="memory-drawer" aria-label="编辑创作记忆">
+              <header class="memory-drawer-head">
+                <div>
+                  <span class="eyebrow">编辑抽屉</span>
+                  <strong id="memoryDrawerTitle">创作记忆</strong>
+                </div>
+                <button id="closeMemoryDrawerBtn" type="button">关闭</button>
+              </header>
+              <div class="memory-drawer-body">
+                <section class="memory-drawer-section" data-memory-section="outline">
+                  <div class="drawer-section-head">
+                    <div>
+                      <span class="eyebrow">项目大纲</span>
+                      <strong id="outlineDrawerTitle">只保留故事骨架</strong>
+                    </div>
+                    <button id="applyOutlineResultBtn" type="button">应用整理结果</button>
+                  </div>
+                  <label id="projectOutlineLabel">
+                    项目大纲
+                    <textarea id="projectOutline" rows="10" placeholder="只写 7 板块：核心卖点、世界观/背景、主要人物、人物关系、阶段主线、未回收伏笔、长期结局。关键信息建议标【已确定/推断/待确认】和来源。不要写未来章节建议。"></textarea>
+                  </label>
+                  <label id="outlineResultLabel">
+                    大纲整理结果
+                    <textarea id="outlineResult" rows="8" placeholder="点击“整理大纲”后，结果会先放在这里。确认无误后点“应用整理结果”。检查模式只输出冲突和需要确认，不会自动改大纲。"></textarea>
+                  </label>
+                  <details class="quick-accordion outline-review-accordion outline-drawer-confirmations">
+                    <summary>
+                      <span>作者确认区</span>
+                      <small id="outlineConfirmationCount">暂无确认项</small>
+                    </summary>
+                    <div class="quick-accordion-body outline-review-body">
+                      <div class="status-strip">检查大纲后，先提取“需要作者确认”的内容。你确认后，再让更新大纲按这些决定优化当前项目大纲。</div>
+                      <div class="outline-review-actions">
+                        <button id="extractOutlineConfirmationsBtn" type="button">提取确认项</button>
+                        <button id="optimizeOutlineFromCheckBtn" type="button">根据确认优化大纲</button>
+                      </div>
+                      <div id="outlineConfirmationList" class="outline-confirmation-list"></div>
+                      <label>
+                        作者补充确认
+                        <textarea id="outlineAuthorNotes" rows="4" placeholder="这里写你额外拍板的设定。例如：苏眠不是背叛，而是被迫传递假情报；旧大纲的人物关系保持不变。"></textarea>
+                      </label>
+                    </div>
+                  </details>
+                </section>
+                <section class="memory-drawer-section" data-memory-section="analysis">
+                  <div class="drawer-section-head">
+                    <div>
+                      <span class="eyebrow">小说记忆卡</span>
+                      <strong id="analysisDrawerTitle">下一步、风险和续写记忆</strong>
+                    </div>
+                  </div>
+                  <label id="quickAnalysisLabel">
+                    小说理解结果
+                    <textarea id="quickAnalysis" rows="11" placeholder="点“分析记忆卡”后，这里会出现下一步最该做什么、最大连载风险、未来4章建议和续写记忆卡。你也可以手动修改。"></textarea>
+                  </label>
+                </section>
+                <section class="memory-drawer-section" data-memory-section="brief">
+                  <div class="drawer-section-head">
+                    <div>
+                      <span class="eyebrow">章节方向</span>
+                      <strong id="briefDrawerTitle">生成正文前的两章路线</strong>
+                    </div>
+                  </div>
+                  <label id="quickBriefLabel">
+                    章节方向
+                    <textarea id="quickBrief" rows="12" placeholder="点“推断章节方向”后会自动填入。也可以自己写：后续章节分别推进什么、出现什么冲突、结尾留什么钩子。"></textarea>
+                  </label>
+                </section>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="panel advanced-tools-panel" id="advancedTools" data-panel>
+          <div class="section-heading">
+            <h2>高级工具</h2>
+            <div class="section-tools">
+              <details class="help-card">
+                <summary>操作说明</summary>
+                <ol>
+                  <li>日常写作只用“写作首页、正文库、AI 接口”。</li>
+                  <li>需要额外处理时，从这里进入对应工具。</li>
+                  <li>进入工具后可以生成对应提示词，也可以直接调用 AI。</li>
+                </ol>
+              </details>
+            </div>
+          </div>
+          <div class="advanced-tool-grid" aria-label="高级工具入口">
+            <button class="advanced-tool-card" data-open-tool="polish" type="button">
+              <span class="eyebrow">文本处理</span>
+              <strong>正文润色</strong>
+              <small>粘贴章节后做普通润色或精修润色，保留剧情和人物关系。</small>
+            </button>
+            <button class="advanced-tool-card" data-open-tool="quality" type="button">
+              <span class="eyebrow">长篇质检</span>
+              <strong>长篇体检</strong>
+              <small>按 3 万字/5 万字节点检查追读、人物、设定、AI痕迹和付费风险。</small>
+            </button>
+            <button class="advanced-tool-card" data-open-tool="release" type="button">
+              <span class="eyebrow">发布前</span>
+              <strong>发布检查</strong>
+              <small>检查读者奖励、章末钩子、连续性和发布风险。</small>
+            </button>
+            <button class="advanced-tool-card" data-open-tool="feedback" type="button">
+              <span class="eyebrow">运营反馈</span>
+              <strong>读者反馈</strong>
+              <small>分析评论和数据，区分有效信号、噪音和掉读风险。</small>
+            </button>
+            <button class="advanced-tool-card" data-open-tool="recovery" type="button">
+              <span class="eyebrow">恢复更新</span>
+              <strong>断更恢复</strong>
+              <small>整理前情、未兑现承诺和重启章节方案。</small>
+            </button>
+            <button class="advanced-tool-card" data-open-tool="arc" type="button">
+              <span class="eyebrow">长期规划</span>
+              <strong>季/卷规划</strong>
+              <small>规划阶段目标、章节跨度、前五章钩子和回收窗口。</small>
+            </button>
+            <button class="advanced-tool-card" data-open-tool="ending" type="button">
+              <span class="eyebrow">收尾阶段</span>
+              <strong>完结规划</strong>
+              <small>诊断完结条件、整理待回收伏笔、倒排剩余章节，并限制正文继续开新坑。</small>
+            </button>
+          </div>
+        </section>
+
+        <section class="panel diagnosis-panel" id="diagnosis" data-panel>
+          <div class="section-heading">
+            <div>
+              <h2>AI诊断修复中心</h2>
+              <p class="section-subtitle">把质量门、长篇体检、发布检查和大纲检查的问题统一分诊，再修正文、补大纲、补记忆卡或交给作者确认。</p>
+            </div>
+            <div class="section-tools">
+              <button id="diagnosisOpenQualityBtn" type="button">打开长篇体检</button>
+              <button id="diagnosisOpenReleaseBtn" type="button">打开发布检查</button>
+              <details class="help-card">
+                <summary>操作说明</summary>
+                <ol>
+                  <li>先从左侧诊断入口把问题转成任务。</li>
+                  <li>勾选 3-5 条任务，让 AI 判断修复去向。</li>
+                  <li>正文问题走“AI修正文”，结构问题走“大纲补充”或“记忆卡补充”。</li>
+                  <li>修复后用“AI复查任务”，再应用复查结论清理已完成任务。</li>
+                </ol>
+              </details>
+            </div>
+          </div>
+
+          <div class="diagnosis-overview-grid" aria-label="诊断总览">
+            <article class="diagnosis-stat-card">
+              <span>待处理</span>
+              <strong id="diagnosisTodoCount">0</strong>
+              <small>所有未完成任务</small>
+            </article>
+            <article class="diagnosis-stat-card">
+              <span>高风险</span>
+              <strong id="diagnosisBlockCount">0</strong>
+              <small>优先处理</small>
+            </article>
+            <article class="diagnosis-stat-card">
+              <span>大纲补充</span>
+              <strong id="diagnosisOutlineCount">0</strong>
+              <small>需要沉淀结构</small>
+            </article>
+            <article class="diagnosis-stat-card">
+              <span>作者确认</span>
+              <strong id="diagnosisConfirmCount">0</strong>
+              <small>需要你拍板</small>
+            </article>
+          </div>
+
+          <div class="diagnosis-workspace">
+            <aside class="diagnosis-sidebar">
+              <section class="diagnosis-card">
+                <div class="diagnosis-card-head">
+                  <span class="eyebrow">诊断入口</span>
+                  <strong>发现问题</strong>
+                </div>
+                <div class="diagnosis-entry-list">
+                  <button id="diagnosisFromQualityBtn" type="button">
+                    <strong>质量门转任务</strong>
+                    <small>把当前生成正文的本地风险变成待办</small>
+                  </button>
+                  <button id="diagnosisFromAuditBtn" type="button">
+                    <strong>体检报告转任务</strong>
+                    <small>长篇追读、人物、设定和 AI 痕迹问题</small>
+                  </button>
+                  <button id="diagnosisFromReleaseBtn" type="button">
+                    <strong>发布检查转任务</strong>
+                    <small>发文前风险、章末钩子和读者奖励</small>
+                  </button>
+                  <button id="diagnosisOpenOutlineBtn" type="button">
+                    <strong>打开大纲检查</strong>
+                    <small>检查项目大纲冲突和缺失</small>
+                  </button>
+                </div>
+              </section>
+              <section class="diagnosis-card">
+                <div class="diagnosis-card-head">
+                  <span class="eyebrow">处理去向</span>
+                  <strong>任务分流</strong>
+                </div>
+                <div class="diagnosis-route-list">
+                  <span><b>正文修复</b> 改当前章节</span>
+                  <span><b>大纲补充</b> 沉淀长期结构</span>
+                  <span><b>记忆卡补充</b> 更新已发生事实</span>
+                  <span><b>方向避坑</b> 影响后续生成</span>
+                  <span><b>作者确认</b> 等你拍板</span>
+                </div>
+              </section>
+            </aside>
+
+            <section id="revisionTaskPanel" class="revision-task-panel diagnosis-task-panel">
+              <div class="revision-task-head">
+                <div>
+                  <span class="eyebrow">问题任务池</span>
+                  <strong id="revisionTaskSummary">暂无待办</strong>
+                  <p>统一收纳质量门、长篇体检、发布检查和大纲检查的问题。</p>
+                </div>
+                <div class="revision-task-actions">
+                  <button id="revisionFromCurrentQualityBtn" type="button">质量门转任务</button>
+                  <button id="revisionFromAuditBtn" type="button">体检转任务</button>
+                  <button id="revisionFromReleaseBtn" type="button">发布检查转任务</button>
+                  <button id="revisionApplyReviewBtn" type="button">应用复查结论</button>
+                  <button id="revisionClearDoneBtn" type="button">清理已处理</button>
+                </div>
+              </div>
+              <div id="revisionTaskList" class="revision-task-list">暂无修改任务。</div>
+            </section>
+
+            <aside class="diagnosis-repair-panel">
+              <div class="revision-ai-panel" id="revisionAiPanel">
+                <div class="revision-ai-head">
+                  <div>
+                    <span class="eyebrow">AI修复工作台</span>
+                    <strong id="revisionAiSummary">未选择任务</strong>
+                    <p id="revisionAiHint">先勾选 3-5 条任务，再让 AI 选择修正文、补大纲、补记忆卡或复查。</p>
+                  </div>
+                </div>
+                <div class="revision-ai-actions diagnosis-ai-actions">
+                  <button id="revisionAiClassifyBtn" type="button">AI分诊任务</button>
+                  <button id="revisionAiPlanBtn" type="button">生成修复方案</button>
+                  <button id="revisionAiOutlinePatchBtn" type="button">生成大纲补充</button>
+                  <button id="revisionAiMemoryPatchBtn" type="button">生成记忆卡补充</button>
+                  <button id="revisionAiRewriteBtn" class="main-command" type="button">AI修正文</button>
+                  <button id="revisionAiReviewBtn" type="button">AI复查任务</button>
+                  <button id="revisionAiApplyDraftBtn" type="button" disabled>应用到当前章节</button>
+                  <button id="revisionAiApplyOutlinePatchBtn" type="button" disabled>送入大纲整理结果</button>
+                  <button id="revisionAiApplyMemoryPatchBtn" type="button" disabled>追加到记忆卡</button>
+                </div>
+                <textarea id="revisionAiOutput" rows="14" spellcheck="false" placeholder="AI 任务处理结果会显示在这里。正文修复请先检查再应用；大纲补充会先送入大纲整理结果，确认后再应用。"></textarea>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="panel" id="dashboard" data-panel>
+          <div class="section-heading">
+            <h2>连载状态</h2>
+            <div class="section-tools">
+              <button data-prompt="dashboard" type="button">生成总控提示词</button>
+              <details class="help-card">
+                <summary>操作说明</summary>
+                <ol>
+                  <li>填写当前章节、存稿和发布状态。</li>
+                  <li>在“当前项目状态”写时间线、人物状态和未兑现承诺。</li>
+                  <li>点“生成总控提示词”，让 AI 帮你判断下一步。</li>
+                </ol>
+              </details>
+            </div>
+          </div>
+          <div class="metrics">
+            <label>
+              当前章节
+              <input id="currentChapter" type="number" min="1" value="1" />
+            </label>
+            <label>
+              存稿
+              <input id="bufferCount" type="number" min="0" value="0" />
+            </label>
+            <label>
+              当前状态
+              <select id="releaseStatus">
+                <option>planned</option>
+                <option>drafted</option>
+                <option>revised</option>
+                <option>queued</option>
+                <option>published</option>
+                <option>paused</option>
+              </select>
+            </label>
+          </div>
+          <label>
+            当前项目状态
+            <textarea id="projectState" rows="9" placeholder="时间线、活跃人物、公开信息、作者隐藏信息、未兑现承诺、下一章压力点"></textarea>
+          </label>
+        </section>
+
+        <section class="panel" id="arc" data-panel>
+          <div class="section-heading">
+            <h2>季/卷规划</h2>
+            <div class="section-tools">
+              <button data-prompt="arc" type="button">生成规划提示词</button>
+              <details class="help-card">
+                <summary>操作说明</summary>
+                <ol>
+                  <li>写清这一卷要兑现什么大期待。</li>
+                  <li>填章节跨度，例如 1-30。</li>
+                  <li>点“生成规划提示词”，让 AI 给出章节节奏和钩子。</li>
+                </ol>
+              </details>
+            </div>
+          </div>
+          <div class="form-row">
+            <label>
+              季/卷目标
+              <input id="seasonPromise" type="text" placeholder="这一季让读者期待什么兑现？" />
+            </label>
+            <label>
+              章节跨度
+              <input id="seasonSpan" type="text" placeholder="例如 1-30" />
+            </label>
+          </div>
+          <label>
+            前五章钩子
+            <textarea id="firstHooks" rows="8" placeholder="第1章：...&#10;第2章：..."></textarea>
+          </label>
+        </section>
+
+        <section class="panel ending-panel" id="ending" data-panel>
+          <div class="section-heading">
+            <h2>完结规划</h2>
+            <div class="section-tools">
+              <button data-prompt="ending" type="button">生成完结提示词</button>
+              <details class="help-card">
+                <summary>操作说明</summary>
+                <ol>
+                  <li>先把作品阶段改成“准备完结”或“完结中”，填预计剩余章数和结局方向。</li>
+                  <li>可以先点“从正文库扫描线索”，让 AI 根据已保存章节找未回收伏笔和人物收尾。</li>
+                  <li>先点“生成完结诊断”，确认哪些人物、伏笔和主线还没收。</li>
+                  <li>再点“生成倒排大纲”，让 AI 按剩余章数安排收尾节奏。</li>
+                  <li>倒排大纲确认后，可以写入正文库为待写章节计划。</li>
+                  <li>开启完结模式后，生成正文会优先参考完结规划，减少新坑，优先回收旧线。</li>
+                </ol>
+              </details>
+            </div>
+          </div>
+
+          <div class="ending-grid">
+            <div class="ending-settings-card">
+              <div class="form-row">
+                <label>
+                  作品阶段
+                  <select id="endingStage">
+                    <option value="serial">连载中</option>
+                    <option value="preparing">准备完结</option>
+                    <option value="ending">完结中</option>
+                    <option value="completed">已完结</option>
+                  </select>
+                </label>
+                <label>
+                  预计剩余章数
+                  <input id="endingRemainingChapters" type="number" min="0" placeholder="例如 12" />
+                </label>
+              </div>
+              <div class="form-row">
+                <label>
+                  结局类型
+                  <select id="endingType">
+                    <option value="爽文收束">爽文收束</option>
+                    <option value="大团圆">大团圆</option>
+                    <option value="开放式">开放式</option>
+                    <option value="悲剧">悲剧</option>
+                    <option value="反转结局">反转结局</option>
+                    <option value="克制余味">克制余味</option>
+                  </select>
+                </label>
+                <label class="inline-check ending-check">
+                  <input id="endingAllowNewHooks" type="checkbox" />
+                  <span>允许新增关键伏笔</span>
+                </label>
+              </div>
+              <label>
+                必须回收伏笔
+                <textarea id="endingMustPayoff" rows="5" placeholder="列出必须交代的秘密、承诺、道具、人物债务。可以先空着，让 AI 帮你整理。"></textarea>
+              </label>
+              <label>
+                必须交代人物
+                <textarea id="endingCharacterClosures" rows="5" placeholder="列出主角、反派、重要配角分别需要什么结局或状态变化。"></textarea>
+              </label>
+              <label>
+                作者确认/最终决定
+                <textarea id="endingAuthorDecisions" rows="5" placeholder="写你已经拍板的结局决定。这里优先级最高，AI 不能擅自推翻。"></textarea>
+              </label>
+            </div>
+
+            <aside class="ending-status-card">
+              <span class="eyebrow">完结状态</span>
+              <strong id="endingStageSummary">连载中</strong>
+              <p id="endingProgressSummary">尚未开启完结模式。开启后，正文生成会增加收尾约束。</p>
+              <div class="ending-stat-grid">
+                <div><span>剩余</span><strong id="endingRemainingSummary">未设置</strong></div>
+                <div><span>伏笔</span><strong id="endingPayoffSummary">未整理</strong></div>
+                <div><span>倒排</span><strong id="endingReverseSummary">未生成</strong></div>
+                <div><span>正文库</span><strong id="endingLibrarySummary">暂无正文</strong></div>
+                <div><span>计划章</span><strong id="endingPlanChapterSummary">0 章</strong></div>
+              </div>
+              <div class="ending-link-card">
+                <strong>正文库联动</strong>
+                <p id="endingLibraryHint">保存章节后，可以从正文库扫描未回收线索，并把倒排大纲写成待写章节计划。</p>
+              </div>
+            </aside>
+          </div>
+
+          <div class="ending-actions">
+            <button id="endingLibraryScanBtn" type="button">从正文库扫描线索</button>
+            <button id="endingDiagnosisBtn" class="main-command" type="button">生成完结诊断</button>
+            <button id="endingPayoffBtn" type="button">整理待回收伏笔</button>
+            <button id="endingReverseBtn" type="button">生成倒排完结大纲</button>
+            <button id="endingReadinessBtn" type="button">检查是否可以完结</button>
+            <button id="endingApplyPlanBtn" type="button">倒排计划写入正文库</button>
+          </div>
+
+          <div class="ending-result-grid">
+            <label>
+              正文库扫描结果
+              <textarea id="endingLibraryScanResult" rows="10" placeholder="AI 会读取正文库章节索引、最近章节和备注，整理真实存在的未回收线索。"></textarea>
+            </label>
+            <label>
+              完结诊断
+              <textarea id="endingDiagnosis" rows="10" placeholder="AI 会判断当前离完结还差什么、最大收尾风险和需要作者确认的地方。"></textarea>
+            </label>
+            <label>
+              待回收伏笔整理
+              <textarea id="endingPayoffResult" rows="10" placeholder="AI 会把必须回收、可以合并、可以淡出和不能新增的线索分组。"></textarea>
+            </label>
+            <label>
+              倒排完结大纲
+              <textarea id="endingReverseOutline" rows="12" placeholder="AI 会按预计剩余章数倒排收束节奏、高潮和最终章。"></textarea>
+            </label>
+            <label>
+              完结可行性检查
+              <textarea id="endingReadinessResult" rows="12" placeholder="AI 会检查是否已经具备完结条件，以及还缺哪些必要收尾。"></textarea>
+            </label>
+          </div>
+        </section>
+
+        <section class="panel manuscript-panel" id="manuscript" data-panel>
+          <div class="section-heading manuscript-heading">
+            <h2>章节正文库</h2>
+            <div class="section-tools">
+              <button data-prompt="manuscript" type="button">生成修订提示词</button>
+              <details class="help-card">
+                <summary>操作说明</summary>
+                <ol>
+                  <li>左侧选择章节，右侧编辑正文。</li>
+                  <li>AI 生成后可点“AI 输出写入当前章节”。</li>
+                  <li>改完点“保存章节”，需要文本备份就打开“导出 TXT”。</li>
+                </ol>
+              </details>
+            </div>
+          </div>
+          <div class="manuscript-grid manuscript-workspace">
+            <aside class="chapter-library-panel">
+              <div class="chapter-library-head">
+                <div>
+                  <span class="eyebrow">章节目录</span>
+                  <strong id="chapterLibraryTitle">共 1 章</strong>
+                </div>
+                <button id="newChapterBtn" type="button">新建</button>
+              </div>
+              <div class="chapter-library-filters">
+                <label>
+                  搜索章节
+                  <input id="chapterSearchInput" type="search" placeholder="章节号、标题、备注" />
+                </label>
+                <label>
+                  状态筛选
+                  <select id="chapterStatusFilter">
+                    <option value="all">全部状态</option>
+                    <option value="planned">计划</option>
+                    <option value="brief">大纲</option>
+                    <option value="drafted">已入库</option>
+                    <option value="needs-review">待质检</option>
+                    <option value="reviewed">已质检</option>
+                    <option value="needs-fix">需修复</option>
+                    <option value="revised">已修</option>
+                    <option value="queued">待发</option>
+                    <option value="published">已发</option>
+                    <option value="final">已完成</option>
+                  </select>
+                </label>
+              </div>
+              <select id="chapterLibrary" class="sr-only" aria-label="章节"></select>
+              <div id="chapterCardList" class="chapter-card-list" role="listbox" aria-label="章节列表"></div>
+              <div class="chapter-library-summary" id="chapterLibrarySummary">正文 0 字</div>
+            </aside>
+            <div class="chapter-editor writer-editor">
+              <div class="writer-editor-bar">
+                <div>
+                  <span class="eyebrow">当前章节</span>
+                  <strong id="chapterEditorHeading">第1章 未命名</strong>
+                </div>
+                <div class="writer-editor-actions">
+                  <span id="chapterDraftStats" class="chapter-draft-stats">0 字</span>
+                  <span id="chapterSaveState" class="chapter-save-state" data-state="saved">已保存</span>
+                  <button id="chapterFocusBtn" type="button">专注</button>
+                  <button id="chapterLibraryToggleBtn" type="button">章节目录</button>
+                  <button id="chapterSideToggleBtn" type="button">章节信息</button>
+                  <details class="chapter-export-menu compact-export editor-export-menu" id="chapterExportMenu">
+                    <summary>导出 TXT</summary>
+                    <div class="chapter-export-body">
+                      <div class="export-action-row">
+                        <button id="exportCurrentTxtBtn" type="button">单章</button>
+                        <button id="exportSelectedTxtBtn" type="button">批量</button>
+                        <button id="exportAllTxtBtn" type="button">全本</button>
+                      </div>
+                      <label class="export-select-label">
+                        批量选择章节
+                        <select id="txtExportChapterSelect" multiple size="6"></select>
+                      </label>
+                      <button id="exportChapterBtn" type="button">当前章 Markdown</button>
+                      <div class="export-hint">批量导出可按住 Ctrl 多选。</div>
+                    </div>
+                  </details>
+                  <button id="saveChapterBtn" class="main-command" type="button">保存章节</button>
+                </div>
+              </div>
+              <label class="chapter-draft-field">
+                <span class="field-heading">
+                  <span>正文</span>
+                </span>
+                <textarea id="chapterEditorDraft" rows="18" placeholder="在这里写章节正文，或从 AI 输出写入。"></textarea>
+              </label>
+            </div>
+            <aside class="chapter-side-panel">
+              <div class="chapter-tool-card">
+                <div class="chapter-side-head">
+                  <span class="eyebrow">章节信息</span>
+                  <button id="chapterSideCloseBtn" type="button">收起</button>
+                </div>
+                <div class="chapter-editor-meta">
+                  <div class="chapter-editor-meta-row">
+                    <label>
+                      章节号
+                      <input id="chapterEditorNumber" type="number" min="1" value="1" />
+                    </label>
+                    <label>
+                      状态
+                      <select id="chapterEditorStatus">
+                        <option value="planned">计划</option>
+                        <option value="brief">大纲</option>
+                        <option value="drafted">已入库</option>
+                        <option value="needs-review">待质检</option>
+                        <option value="reviewed">已质检</option>
+                        <option value="needs-fix">需修复</option>
+                        <option value="revised">已修</option>
+                        <option value="queued">待发</option>
+                        <option value="published">已发</option>
+                        <option value="final">已完成</option>
+                      </select>
+                    </label>
+                  </div>
+                  <label class="chapter-title-control">
+                    标题
+                    <input id="chapterEditorTitle" type="text" placeholder="第1章 标题" />
+                  </label>
+                </div>
+              </div>
+              <details class="chapter-tool-card chapter-notes-details" open>
+                <summary>章节备注</summary>
+                <textarea id="chapterEditorNotes" rows="6" placeholder="伏笔、读者奖励、结尾钩子、下章压力点"></textarea>
+              </details>
+              <div class="chapter-tool-card">
+                <span class="eyebrow">快捷操作</span>
+                <div class="status-strip" id="chapterStats">当前章 0 字 · 0 行</div>
+                <div class="chapter-action-stack">
+                  <button id="aiToChapterBtn" type="button">把 AI 正文写入本章</button>
+                  <button id="deleteChapterBtn" type="button">删除章节</button>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="panel polish-panel" id="polish" data-panel>
+          <div class="section-heading">
+            <h2>正文润色</h2>
+            <div class="section-tools">
+              <button data-prompt="polish" type="button">生成润色提示词</button>
+              <details class="help-card">
+                <summary>操作说明</summary>
+                <ol>
+                  <li>把需要润色的一章粘到“原章节”。</li>
+                  <li>点击“开始润色”，AI 会保留剧情、结构和风格，只做纠错、顺句和适度增强。</li>
+                  <li>完成后复制结果，或放回“生成正文”继续保存。</li>
+                </ol>
+              </details>
+            </div>
+          </div>
+          <div class="polish-grid">
+            <label class="polish-mode-control">
+              润色方式
+              <select id="polishMode">
+                <option value="standard">普通润色：纠错、顺句、适度增强</option>
+                <option value="intensive">精修润色：语言质感、节奏、画面和情绪全面提升</option>
+              </select>
+            </label>
+            <div id="polishReviewContextHint" class="status-strip polish-review-hint" hidden>已带入短篇检查意见，精修会优先处理检查指出的问题。</div>
+            <label>
+              原章节
+              <textarea id="polishSource" rows="16" placeholder="把需要润色的小说章节粘贴到这里。建议一次放一章，AI 会保留剧情、结构、人物和原文风格，只修正问题、顺畅句子并适度增强画面和情绪。"></textarea>
+            </label>
+            <label>
+              润色结果
+              <textarea id="polishOutput" rows="16" spellcheck="false" placeholder="点击“开始润色”后，润色后的正文会出现在这里。"></textarea>
+            </label>
+            <div class="polish-actions">
+              <button id="useQuickOutputForPolishBtn" type="button">从生成正文带入</button>
+              <button id="polishChapterBtn" class="main-command" type="button">开始润色</button>
+              <button id="copyPolishOutputBtn" type="button">复制润色结果</button>
+              <button id="usePolishAsQuickOutputBtn" type="button">放入生成正文</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel quality-panel" id="quality" data-panel>
+          <div class="section-heading">
+            <h2>长篇体检</h2>
+            <div class="section-tools">
+              <button data-prompt="quality" type="button">生成体检提示词</button>
+              <button id="qualityAuditBtn" class="main-command" type="button">开始体检</button>
+              <button id="qualityToPolishBtn" type="button">送去润色</button>
+              <details class="help-card">
+                <summary>操作说明</summary>
+                <ol>
+                  <li>正文库达到约 3 万字后，建议做一次追读、人物、设定和AI痕迹体检。</li>
+                  <li>达到约 5 万字后，体检会重点检查大纲、人物状态、世界观、伏笔、时间线和道具体系是否需要刷新。</li>
+                  <li>体检只给检查报告和修改任务，不会续写正文；需要修改当前章节时点“送去润色”。</li>
+                </ol>
+              </details>
+            </div>
+          </div>
+          <div class="metrics quality-audit-metrics">
+            <div class="usage-metric-card">
+              <span>正文规模</span>
+              <strong id="qualityAuditWords">0 字 / 0 章</strong>
+              <small>按正文库统计</small>
+            </div>
+            <div class="usage-metric-card">
+              <span>节点状态</span>
+              <strong id="qualityAuditMilestone">未到强提醒节点</strong>
+              <small>3万字体检 / 5万字结构刷新</small>
+            </div>
+            <div class="usage-metric-card">
+              <span>上次体检</span>
+              <strong id="qualityAuditUpdated">尚未体检</strong>
+              <small>结果会保存在本项目里</small>
+            </div>
+          </div>
+          <div id="qualityAuditHint" class="status-strip">正文库达到 3 万字后建议运行长篇体检。</div>
+          <label>
+            体检结果
+            <textarea id="qualityAuditResult" rows="18" spellcheck="false" placeholder="点击“开始体检”后，这里会显示追读欲、人物、设定、AI痕迹和修改任务。"></textarea>
+          </label>
+        </section>
+
+        <section class="panel" id="release" data-panel>
+          <div class="section-heading">
+            <h2>发布检查</h2>
+            <div class="section-tools">
+              <button data-prompt="release" type="button">生成检查提示词</button>
+              <details class="help-card">
+                <summary>操作说明</summary>
+                <ol>
+                  <li>勾选本章已经做到的检查项。</li>
+                  <li>把待发布正文或摘要粘到下面。</li>
+                  <li>点“生成检查提示词”，让 AI 判断能不能发。</li>
+                </ol>
+              </details>
+            </div>
+          </div>
+          <div class="checklist" id="releaseChecklist"></div>
+          <label>
+            待检查章节正文或摘要
+            <textarea id="releaseDraft" rows="8" placeholder="粘贴章节正文、摘要或你想检查的片段"></textarea>
+          </label>
+        </section>
+
+        <section class="panel" id="feedback" data-panel>
+          <div class="section-heading">
+            <h2>读者反馈</h2>
+            <div class="section-tools">
+              <button data-prompt="feedback" type="button">生成反馈分析提示词</button>
+              <details class="help-card">
+                <summary>操作说明</summary>
+                <ol>
+                  <li>粘贴评论、收藏变化或读者疑问。</li>
+                  <li>不要急着照单全改，先让 AI 区分有效信号和噪音。</li>
+                  <li>点“生成反馈分析提示词”，得到下一章调整建议。</li>
+                </ol>
+              </details>
+            </div>
+          </div>
+          <label>
+            评论/数据
+            <textarea id="readerFeedback" rows="10" placeholder="粘贴评论、掉收藏节点、点赞变化、读者疑问"></textarea>
+          </label>
+        </section>
+
+        <section class="panel" id="recovery" data-panel>
+          <div class="section-heading">
+            <h2>断更恢复</h2>
+            <div class="section-tools">
+              <button data-prompt="recovery" type="button">生成恢复提示词</button>
+              <details class="help-card">
+                <summary>操作说明</summary>
+                <ol>
+                  <li>填写停更多久和最后发布到哪一章。</li>
+                  <li>写下停更前剧情、悬念和角色状态。</li>
+                  <li>点“生成恢复提示词”，让 AI 给你重启章节方案。</li>
+                </ol>
+              </details>
+            </div>
+          </div>
+          <div class="form-row">
+            <label>
+              停更时长
+              <input id="hiatusLength" type="text" placeholder="例如 两个月" />
+            </label>
+            <label>
+              最后一章
+              <input id="lastPublished" type="text" placeholder="例如 第27章" />
+            </label>
+          </div>
+          <label>
+            停更前剧情
+            <textarea id="hiatusContext" rows="8" placeholder="最后公开信息、悬念、角色状态、作者还记得的计划"></textarea>
+          </label>
+        </section>
+
+        <section class="panel usage-panel-main" id="usage" data-panel>
+          <div class="section-heading">
+            <div>
+              <h2>使用统计</h2>
+              <p class="section-subtitle">查看各功能的 Token 消耗。Codex 本机调用以估算为主，接口返回 usage 时会显示实际值。</p>
+            </div>
+            <div class="section-tools">
+              <button id="refreshUsageBtn" type="button">刷新统计</button>
+              <button id="exportUsageBtn" type="button">导出统计</button>
+              <button id="importHistoricalUsageBtn" type="button">导入当前页面估算</button>
+              <button id="clearUsageBtn" type="button">清空统计</button>
+              <details class="help-card">
+                <summary>操作说明</summary>
+                <ol>
+                  <li>每次 AI 调用会自动记录输入、输出和总 Token。</li>
+                  <li>“实际”表示接口返回 usage；“估算”表示按文本长度本地计算。</li>
+                  <li>统计只保存在当前电脑浏览器里，不会影响小说项目。</li>
+                </ol>
+              </details>
+            </div>
+          </div>
+          <div class="usage-controls">
+            <div class="usage-range-tabs" role="tablist" aria-label="统计时间范围">
+              <button class="is-active" data-usage-range="24h" type="button">24小时</button>
+              <button data-usage-range="7d" type="button">7天</button>
+              <button data-usage-range="30d" type="button">30天</button>
+              <button data-usage-range="all" type="button">全部</button>
+            </div>
+            <label>
+              功能
+              <select id="usageTaskFilter">
+                <option value="all">全部功能</option>
+              </select>
+            </label>
+            <label>
+              服务
+              <select id="usageProviderFilter">
+                <option value="all">全部服务</option>
+              </select>
+            </label>
+          </div>
+          <div class="usage-import-panel">
+            <div class="usage-import-panel-copy">
+              <strong>项目库历史回填</strong>
+              <span>直接读取已保存项目文件，按大纲、记忆卡、章节方向、正文生成等模块估算。历史回填是趋势参考，不等同于平台账单。</span>
+            </div>
+            <label>
+              项目库
+              <select id="usageProjectImportSelect">
+                <option value="">读取项目库中...</option>
+              </select>
+            </label>
+            <label class="usage-import-toggle">
+              <input id="includeCorpusGenerationCost" type="checkbox" />
+              <span>把正文库历史正文也按 AI 假设生成成本计入</span>
+            </label>
+            <div class="usage-import-actions">
+              <button id="refreshUsageProjectsBtn" type="button">刷新项目</button>
+              <button id="previewUsageProjectImportBtn" type="button">预览估算</button>
+              <button id="confirmUsageProjectImportBtn" type="button" disabled>确认导入</button>
+              <button id="undoUsageImportBtn" type="button">撤销上次导入</button>
+            </div>
+            <div class="usage-import-preview" id="usageImportPreview">
+              <strong>历史回填估算</strong><span>选择项目后先预览，确认无误再导入。</span>
+            </div>
+          </div>
+          <div class="usage-summary-strip" id="usageSummaryText">暂无统计数据。</div>
+          <div class="usage-empty-state" id="usageEmptyState">
+            <div>
+              <strong>还没有 AI 调用记录</strong>
+              <p>生成正文、整理大纲、推断章节方向或润色正文后，这里会自动记录 Token 消耗。</p>
+              <p>如果想先查看以前写过的内容，可以从项目库导入历史回填估算。</p>
+            </div>
+            <div class="usage-empty-actions">
+              <button id="usageEmptyImportBtn" type="button">导入当前页面估算</button>
+              <button data-open-usage-target="quick" type="button">去写作首页</button>
+              <button data-open-usage-target="api" type="button">去 AI 接口</button>
+            </div>
+          </div>
+          <div class="usage-metric-grid">
+            <article class="usage-metric-card">
+              <span>请求次数</span>
+              <strong id="usageRequestCount">0</strong>
+              <small id="usageSuccessCount">成功 0 · 失败 0</small>
+            </article>
+            <article class="usage-metric-card">
+              <span>输入 Token</span>
+              <strong id="usageInputTokens">0</strong>
+              <small>发送给模型的上下文</small>
+            </article>
+            <article class="usage-metric-card">
+              <span>输出 Token</span>
+              <strong id="usageOutputTokens">0</strong>
+              <small>模型生成的内容</small>
+            </article>
+            <article class="usage-metric-card">
+              <span>总 Token</span>
+              <strong id="usageTotalTokens">0</strong>
+              <small id="usageActualRate">实际 0 · 估算 0</small>
+            </article>
+            <article class="usage-metric-card">
+              <span>平均每次</span>
+              <strong id="usageAverageTokens">0</strong>
+              <small id="usageAverageDuration">平均耗时 0s</small>
+            </article>
+            <article class="usage-metric-card">
+              <span>最耗功能</span>
+              <strong id="usageTopTask">暂无</strong>
+              <small id="usageTopTaskTokens">0 Token</small>
+            </article>
+            <article class="usage-metric-card usage-corpus-card">
+              <span>正文库规模</span>
+              <strong id="usageCorpusScale">暂无</strong>
+              <small id="usageCorpusScaleHint">已有正文规模会单独显示，不计入总消耗</small>
+            </article>
+          </div>
+          <div class="usage-table-grid">
+            <section class="usage-table-card">
+              <div class="section-heading compact">
+                <h3>功能消耗排行</h3>
+              </div>
+              <div class="usage-table-wrap">
+                <table class="usage-table">
+                  <thead>
+                    <tr>
+                      <th>功能</th>
+                      <th>请求</th>
+                      <th>输入</th>
+                      <th>输出</th>
+                      <th>总计</th>
+                      <th>失败</th>
+                    </tr>
+                  </thead>
+                  <tbody id="usageTaskRows"></tbody>
+                </table>
+              </div>
+            </section>
+            <section class="usage-table-card">
+              <div class="section-heading compact">
+                <h3>最近调用记录</h3>
+              </div>
+              <div class="usage-table-wrap">
+                <table class="usage-table usage-log-table">
+                  <thead>
+                    <tr>
+                      <th>时间</th>
+                      <th>功能</th>
+                      <th>模型</th>
+                      <th>输入</th>
+                      <th>输出</th>
+                      <th>总计</th>
+                      <th>来源</th>
+                      <th>状态</th>
+                    </tr>
+                  </thead>
+                  <tbody id="usageLogRows"></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="panel" id="api" data-panel>
+          <div class="section-heading">
+            <h2>AI 接口</h2>
+            <div class="section-tools">
+              <details class="help-card">
+                <summary>操作说明</summary>
+                <ol>
+                  <li>小白默认使用“Codex 本机一键”。</li>
+                  <li>先点“检测 Codex”确认可用。</li>
+                  <li>其他模型放在“高级参数”里，可以保存成模型方案，再分配给不同功能。</li>
+                </ol>
+              </details>
+            </div>
+          </div>
+          <div class="api-status-grid api-simple-status-grid">
+            <article class="api-status-card">
+              <span>当前服务</span>
+              <strong id="apiModeName">Codex 本机一键</strong>
+              <small id="apiModeHint">使用本机登录状态，不需要 API Key。</small>
+            </article>
+            <article class="api-status-card">
+              <span>当前模型</span>
+              <strong id="apiCurrentModel">codex-default</strong>
+              <small id="apiSmartHint">模块固定模板已开启。</small>
+            </article>
+            <article class="api-status-card">
+              <span>推理等级</span>
+              <strong id="apiCurrentReasoning">高推理</strong>
+              <small>Codex 本地任务会按当前等级执行。</small>
+            </article>
+            <article class="api-status-card">
+              <span>Codex 安装</span>
+              <strong id="codexInstallStatus">未检测</strong>
+              <small id="codexInstallHint">只检查本机 codex.exe 和版本，不代表能生成。</small>
+            </article>
+            <article class="api-status-card">
+              <span>版本检测</span>
+              <strong id="codexVersionStatus">未检测</strong>
+              <small id="codexVersionHint">版本正常才可以继续做真实连通。</small>
+            </article>
+            <article class="api-status-card">
+              <span>真实连通</span>
+              <strong id="apiAvailabilityStatus">未检测</strong>
+              <small id="apiAvailabilityHint">需要真实连通测试后，才代表可以生成。</small>
+            </article>
+            <article class="api-status-card">
+              <span>实际模型</span>
+              <strong id="codexActualModelStatus">未知</strong>
+              <small id="codexActualModelHint">真实测试后显示 Codex 最终使用的模型。</small>
+            </article>
+            <article class="api-status-card api-status-card-secondary">
+              <span>当前策略</span>
+              <strong id="apiCurrentStrategy">均衡模式</strong>
+              <small id="apiModelRouteHint">正文：正文长文模型；润色：润色精修模型</small>
+            </article>
+          </div>
+          <div class="api-primary-actions">
+            <button id="detectCodexBtn" type="button">检查安装</button>
+            <button id="codexProbeBtn" type="button">真实连通测试</button>
+            <button id="generateWithAiBtn" class="primary-action" type="button">直接生成</button>
+          </div>
+          <div class="codex-failure-panel" id="codexFailurePanel" hidden>
+            <strong id="codexFailureTitle">Codex 真实连通失败</strong>
+            <p id="codexFailureAdvice">请先做真实连通测试。</p>
+            <small id="codexFailureMeta"></small>
+          </div>
+          <section class="codex-runtime-panel">
+            <div class="section-heading compact-heading">
+              <h3>Codex 本地控制台</h3>
+              <small>先选模型和推理等级，再做真实连通测试。</small>
+            </div>
+            <div class="codex-preset-grid" aria-label="Codex 推荐方案">
+              <button data-codex-preset="quality-serial" type="button">
+                <span>高质量连载</span>
+                <strong>gpt-5.5 · 高推理</strong>
+                <small data-preset-status>正文生成、章节方向</small>
+              </button>
+              <button data-codex-preset="deep-structure" type="button">
+                <span>深度整理</span>
+                <strong>gpt-5.5 · 超高推理</strong>
+                <small data-preset-status>大纲、体检、修复中心</small>
+              </button>
+              <button data-codex-preset="balanced-save" type="button">
+                <span>均衡省量</span>
+                <strong>gpt-5.4 · 中推理</strong>
+                <small data-preset-status>普通分析、短任务</small>
+              </button>
+              <button data-codex-preset="quick-check" type="button">
+                <span>快速检查</span>
+                <strong>gpt-5.4 · 低推理</strong>
+                <small data-preset-status>测试、轻量校对</small>
+              </button>
+            </div>
+            <div class="codex-runtime-picker">
+              <div>
+                <span class="field-label">模型</span>
+                <div class="segmented-row" role="group" aria-label="Codex 模型">
+                  <button data-codex-model="gpt-5.5" type="button">gpt-5.5</button>
+                  <button data-codex-model="gpt-5.4" type="button">gpt-5.4</button>
+                </div>
+              </div>
+              <label>
+                推理等级
+                <select id="codexReasoningEffort">
+                  <option value="low">低 · 快速测试</option>
+                  <option value="medium">中 · 普通分析</option>
+                  <option value="high">高 · 日常连载</option>
+                  <option value="xhigh">超高 · 深度整理</option>
+                </select>
+                <small id="codexReasoningHint">推荐日常连载，适合正文、记忆卡和章节方向。</small>
+              </label>
+              <div class="codex-profile-pill">
+                <span>当前方案</span>
+                <strong id="codexProfileSummary">默认模型</strong>
+              </div>
+            </div>
+          </section>
+          <section class="codex-route-summary">
+            <div class="section-heading compact-heading">
+              <h3>功能默认路线</h3>
+              <small>不同功能会自动使用适合的模型和推理等级。</small>
+            </div>
+            <div id="codexRouteSummaryGrid" class="codex-route-grid"></div>
+          </section>
+          <div class="ai-call-meta" id="aiCallMeta">还没有调用记录。生成或测试后，这里会显示实际使用的服务和模型。</div>
+          <details class="diagnostic-panel api-diagnostic-details">
+            <summary>
+              <span>系统诊断</span>
+              <small>端口、Codex、Python、项目库</small>
+            </summary>
+            <div class="section-heading compact-heading">
+              <h3>系统诊断</h3>
+              <div class="section-tools">
+                <button id="refreshDiagnosticsBtn" type="button">刷新诊断</button>
+                <button id="copyDiagnosticsBtn" type="button">复制诊断</button>
+              </div>
+            </div>
+            <div class="diagnostic-grid">
+              <article class="diagnostic-card">
+                <span>网页服务</span>
+                <strong id="diagWebStatus">待刷新</strong>
+                <small id="diagWebHint">显示端口、进程和版本。</small>
+              </article>
+              <article class="diagnostic-card">
+                <span>Codex</span>
+                <strong id="diagCodexStatus">待刷新</strong>
+                <small id="diagCodexHint">确认是否选到可访问路径。</small>
+              </article>
+              <article class="diagnostic-card">
+                <span>Python</span>
+                <strong id="diagPythonStatus">待刷新</strong>
+                <small id="diagPythonHint">网页服务依赖 Python 运行。</small>
+              </article>
+              <article class="diagnostic-card">
+                <span>项目库</span>
+                <strong id="diagProjectStatus">待刷新</strong>
+                <small id="diagProjectHint">确认项目目录可读写。</small>
+              </article>
+            </div>
+            <textarea id="diagnosticOutput" rows="8" spellcheck="false" readonly placeholder="点击“刷新诊断”后，这里会显示可复制的排查信息。"></textarea>
+          </details>
+          <details class="api-advanced-settings">
+            <summary>
+              <span>高级参数</span>
+              <small>换服务、填 Key、改接口地址或手动参数</small>
+            </summary>
+            <div class="api-advanced-body">
+              <section class="model-control-panel">
+                <div class="section-heading compact-heading">
+                  <h3>模型方案</h3>
+                  <small>把服务商、模型名和接口地址保存成一个方案，后面可以给不同功能分配不同方案。</small>
+                </div>
+                <div class="model-strategy-row" role="group" aria-label="模型策略">
+                  <button data-model-strategy="economy" type="button">省钱模式</button>
+                  <button data-model-strategy="balanced" type="button">均衡模式</button>
+                  <button data-model-strategy="quality" type="button">高质量模式</button>
+                </div>
+                <div class="form-row">
+                  <label>
+                    正在编辑的方案
+                    <select id="modelProfileSelect"></select>
+                  </label>
+                  <label>
+                    方案名称
+                    <input id="modelProfileName" type="text" placeholder="例如 正文长文模型" />
+                  </label>
+                </div>
+                <div class="button-grid model-profile-actions">
+                  <button id="saveModelProfileBtn" type="button">保存当前方案</button>
+                  <button id="newModelProfileBtn" type="button">新增方案</button>
+                  <button id="deleteModelProfileBtn" type="button">删除方案</button>
+                </div>
+              </section>
+              <section class="model-binding-panel">
+                <div class="section-heading compact-heading">
+                  <h3>功能使用哪个模型</h3>
+                  <small>不想调整就保持默认：大纲/分析走稳定模型，正文走长文模型，润色走精修模型。</small>
+                </div>
+                <div id="modelBindingGrid" class="model-binding-grid"></div>
+              </section>
+              <label class="inline-check smart-ai-check">
+                <input id="smartAiSettings" type="checkbox" />
+                <span>启用模块固定模板，推荐开启：每个功能自动使用适合的温度和最大输出；具体模型由上面的功能绑定决定。</span>
+              </label>
+              <div class="ai-preset-grid">
+                <div><strong>大纲</strong><span>稳定整理</span></div>
+                <div><strong>分析</strong><span>保守归纳</span></div>
+                <div><strong>推断</strong><span>平衡判断</span></div>
+                <div><strong>正文</strong><span>长文输出</span></div>
+                <div><strong>润色</strong><span>细致修改</span></div>
+              </div>
+              <div class="form-row">
+                <label>
+                  服务商
+                  <select id="apiProvider">
+                    <option value="codex">Codex 本机一键，推荐</option>
+                    <option value="openai">OpenAI</option>
+                    <option value="deepseek">DeepSeek</option>
+                    <option value="siliconflow">硅基流动</option>
+                    <option value="dashscope">通义千问 DashScope</option>
+                    <option value="moonshot">Kimi / Moonshot</option>
+                    <option value="zhipu">智谱 GLM</option>
+                    <option value="groq">Groq</option>
+                    <option value="together">Together AI</option>
+                    <option value="mistral">Mistral AI</option>
+                    <option value="xai">xAI Grok</option>
+                    <option value="fireworks">Fireworks AI</option>
+                    <option value="perplexity">Perplexity</option>
+                    <option value="openrouter">OpenRouter</option>
+                    <option value="lmstudio">LM Studio 本地</option>
+                    <option value="ollama">Ollama 本地</option>
+                    <option value="custom">自定义 OpenAI-compatible</option>
+                    <option value="mock">测试模式，不调用真实模型</option>
+                  </select>
+                </label>
+                <label>
+                  模型
+                  <input id="apiModel" type="text" placeholder="Codex 可保持 codex-default；其他平台按需修改" />
+                </label>
+              </div>
+              <label>
+                API Key
+                <input id="apiKey" type="password" autocomplete="off" placeholder="粘贴你的 API Key；本地模型可留空" />
+              </label>
+              <label class="inline-check">
+                <input id="saveApiKey" type="checkbox" />
+                <span>把 API Key 保存在本机浏览器 localStorage 里</span>
+              </label>
+              <label>
+                接口地址
+                <input id="apiEndpoint" type="url" placeholder="https://api.openai.com/v1/chat/completions" />
+              </label>
+              <details class="manual-ai-settings">
+                <summary>
+                  <span>手动参数</span>
+                  <small>关闭模块固定模板后才建议修改</small>
+                </summary>
+                <div class="form-row">
+                  <label>
+                    温度
+                    <input id="apiTemperature" type="number" min="0" max="2" step="0.1" value="0.7" />
+                  </label>
+                  <label>
+                    最大输出
+                    <input id="apiMaxTokens" type="number" min="128" step="128" value="1600" />
+                  </label>
+                </div>
+              </details>
+              <div class="codex-box">
+                <div class="section-heading">
+                  <h3>Codex 配置</h3>
+                </div>
+                <label>
+                  Codex 命令/路径
+                  <input id="codexCommand" type="text" placeholder="auto" />
+                </label>
+                <label>
+                  Codex Profile，可不填
+                  <input id="codexProfile" type="text" placeholder="默认留空；以后有多个 Codex 配置时再填" />
+                </label>
+              </div>
+              <label>
+                系统提示词
+                <textarea id="apiSystemPrompt" rows="4"></textarea>
+              </label>
+              <div class="button-grid">
+                <button id="testApiBtn" type="button">测试接口</button>
+                <button id="clearApiKeyBtn" type="button">清除 Key</button>
+              </div>
+            </div>
+          </details>
+          <label>
+            AI 输出
+            <textarea id="aiOutput" rows="10" spellcheck="false" placeholder="点击“直接生成”后会出现在这里"></textarea>
+          </label>
+        </section>
+
+        <section class="prompt-panel">
+          <div class="section-heading">
+            <h2>给插件的提示词</h2>
+            <span id="saveState" aria-live="polite"></span>
+          </div>
+          <textarea id="promptOutput" rows="9" spellcheck="false"></textarea>
+        </section>
+      </main>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

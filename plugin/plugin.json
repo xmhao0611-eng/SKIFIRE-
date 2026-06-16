@@ -1,0 +1,51 @@
+{
+  "name": "novel-writer",
+  "version": "0.29.2",
+  "description": "A Codex plugin for serialized novel planning, drafting, revision, update cadence, and continuity tracking.",
+  "author": {
+    "name": "xmhao0611-eng",
+    "email": "xmhao0611-eng@users.noreply.github.com",
+    "url": "https://github.com/xmhao0611-eng"
+  },
+  "homepage": "https://github.com/xmhao0611-eng/SKIFIRE-",
+  "repository": "https://github.com/xmhao0611-eng/SKIFIRE-",
+  "license": "MIT",
+  "keywords": [
+    "fiction",
+    "serialized-fiction",
+    "novel",
+    "webnovel",
+    "writing",
+    "outline",
+    "revision",
+    "continuity",
+    "chapter-hooks"
+  ],
+  "skills": "./skills/",
+  "apps": "./apps/",
+  "interface": {
+    "displayName": "Serial Novel Writer",
+    "shortDescription": "Plan, draft, revise, and sustain serialized fiction.",
+    "longDescription": "A focused writing companion for serialized novelists. It helps develop premises, worlds, characters, arcs, chapter directions, prose drafts, polishing passes, revision checks, reader recaps, long-running continuity notes, one-click local Codex calls, and optional OpenAI-compatible model calls through a local web control panel.",
+    "developerName": "xmhao0611-eng",
+    "category": "Productivity",
+    "capabilities": [
+      "Write",
+      "Edit",
+      "Plan",
+      "Review"
+    ],
+    "websiteURL": "https://github.com/xmhao0611-eng/SKIFIRE-",
+    "privacyPolicyURL": "https://github.com/xmhao0611-eng/SKIFIRE-",
+    "termsOfServiceURL": "https://github.com/xmhao0611-eng/SKIFIRE-",
+    "defaultPrompt": [
+      "Turn this serialized novel idea into a season plan and first five chapter hooks.",
+      "Draft the next update while preserving character voice, reader momentum, and continuity.",
+      "Review this chapter for pacing, hook strength, payoff timing, contradictions, and release readiness."
+    ],
+    "brandColor": "#FF8A00",
+    "composerIcon": "./assets/icon.svg",
+    "logo": "./assets/logo.svg",
+    "screenshots": []
+  }
+}
